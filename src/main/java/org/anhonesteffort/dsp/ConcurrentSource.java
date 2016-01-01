@@ -24,6 +24,7 @@ import java.util.concurrent.Future;
 public abstract class ConcurrentSource<T extends Copyable<T>, L extends Sink<T>> extends Source<T, L> {
 
   private static final ExecutorService executor = Executors.newCachedThreadPool();
+  private final Object txnLock = new Object();
   private Future producer = null;
 
   public static void shutdownSources() {
@@ -37,18 +38,16 @@ public abstract class ConcurrentSource<T extends Copyable<T>, L extends Sink<T>>
   }
 
   private void startProducing() {
-    assert !executor.isShutdown() && (producer == null || producer.isDone());
     producer = executor.submit(newProducer());
   }
 
   private void stopProducing() {
-    assert producer != null;
     producer.cancel(true);
   }
 
   @Override
   public void addSink(L sink) {
-    synchronized (sinks) {
+    synchronized (txnLock) {
       if (sinks.isEmpty())
         startProducing();
       sinks.add(sink);
@@ -57,7 +56,7 @@ public abstract class ConcurrentSource<T extends Copyable<T>, L extends Sink<T>>
 
   @Override
   public void removeSink(L sink) {
-    synchronized (sinks) {
+    synchronized (txnLock) {
       sinks.remove(sink);
       if (sinks.isEmpty())
         stopProducing();

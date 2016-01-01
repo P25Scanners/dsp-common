@@ -54,7 +54,6 @@ public class ConstellationPlotPanel extends JPanel implements Sink<ComplexNumber
     RENDERING_HINTS.put(RenderingHints.KEY_RENDERING,    RenderingHints.VALUE_RENDER_QUALITY);
   }
 
-  private final Object                       queueLock = new Object();
   private final BlockingQueue<ComplexNumber> queue;
   private final Timer                        timer;
 
@@ -66,23 +65,16 @@ public class ConstellationPlotPanel extends JPanel implements Sink<ComplexNumber
 
   @Override
   public void consume(ComplexNumber element) {
-    synchronized (queueLock) {
-      if (!queue.offer(element)) {
-        queue.clear();
-        queue.add(element);
-        log.warn("sample receive queue has overflown");
-      }
+    if (!queue.offer(element)) {
+      queue.clear();
+      queue.add(element);
+      log.warn("sample receive queue has overflown");
     }
   }
 
   private List<ComplexNumber> getCurrentSamples() {
     List<ComplexNumber> samples = new LinkedList<>();
-
-    synchronized (queueLock) {
-      if (!queue.isEmpty())
-        queue.drainTo(samples);
-    }
-
+    queue.drainTo(samples);
     return samples;
   }
 
@@ -141,7 +133,7 @@ public class ConstellationPlotPanel extends JPanel implements Sink<ComplexNumber
   @Override
   public void windowClosing(WindowEvent e) {
     timer.stop();
-    synchronized (queueLock) { queue.clear(); }
+    queue.clear();
   }
 
   @Override

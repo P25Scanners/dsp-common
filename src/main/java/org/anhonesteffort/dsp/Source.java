@@ -18,12 +18,12 @@
 package org.anhonesteffort.dsp;
 
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public abstract class Source<T extends Copyable<T>, L extends Sink<T>> {
 
-  protected final List<L> sinks = new LinkedList<>();
+  protected final Queue<L> sinks = new ConcurrentLinkedQueue<>();
 
   public void addSink(L sink) {
     sinks.add(sink);
