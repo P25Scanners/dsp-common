@@ -7,7 +7,7 @@
 
     <groupId>org.anhonesteffort.dsp</groupId>
     <artifactId>dsp-common</artifactId>
-    <version>0.1.3</version>
+    <version>0.1.4</version>
 
     <dependencies>
         <dependency>
@@ -19,6 +19,11 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
             <version>4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>19.0</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
