@@ -17,50 +17,10 @@
 
 package org.anhonesteffort.dsp;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.Callable;
 
-public abstract class ConcurrentSource<T extends Copyable<T>, L extends Sink<T>> extends Source<T, L> {
-
-  private static final ExecutorService executor = Executors.newCachedThreadPool();
-  private final Object txnLock = new Object();
-  private Future producer = null;
-
-  public static void shutdownSources() {
-    executor.shutdownNow();
-  }
-
-  protected abstract Runnable newProducer();
-
-  protected boolean isProducing() {
-    return producer != null && !producer.isDone();
-  }
-
-  private void startProducing() {
-    producer = executor.submit(newProducer());
-  }
-
-  private void stopProducing() {
-    producer.cancel(true);
-  }
-
-  @Override
-  public void addSink(L sink) {
-    synchronized (txnLock) {
-      if (sinks.isEmpty())
-        startProducing();
-      sinks.add(sink);
-    }
-  }
-
-  @Override
-  public void removeSink(L sink) {
-    synchronized (txnLock) {
-      sinks.remove(sink);
-      if (sinks.isEmpty())
-        stopProducing();
-    }
-  }
+public abstract class ConcurrentSource<T extends Copyable<T>, L extends Sink<T>>
+    extends Source<T, L> implements Callable<Void>
+{
 
 }

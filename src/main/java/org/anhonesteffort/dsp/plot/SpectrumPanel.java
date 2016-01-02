@@ -18,11 +18,7 @@
 package org.anhonesteffort.dsp.plot;
 
 import org.anhonesteffort.dsp.Sink;
-import org.anhonesteffort.dsp.sample.Samples;
 import org.anhonesteffort.dsp.dft.DftFrame;
-import org.anhonesteffort.dsp.dft.DftToDecibelConverter;
-import org.anhonesteffort.dsp.dft.DftWidth;
-import org.anhonesteffort.dsp.dft.SamplesToDftConverter;
 import org.anhonesteffort.dsp.util.CircularFloatAveragingQueue;
 
 import javax.swing.JPanel;
@@ -40,7 +36,7 @@ import java.awt.event.WindowListener;
 import java.awt.geom.GeneralPath;
 import java.util.Optional;
 
-public class SpectrumPanel extends JPanel implements Sink<Samples>, ActionListener, WindowListener {
+public class SpectrumPanel extends JPanel implements Sink<DftFrame>, ActionListener, WindowListener {
 
   private static final Color          BACKGROUND_COLOR = Color.BLACK;
   private static final Color          SPECTRUM_COLOR   = Color.RED;
@@ -51,46 +47,29 @@ public class SpectrumPanel extends JPanel implements Sink<Samples>, ActionListen
     RENDERING_HINTS.put(RenderingHints.KEY_RENDERING,    RenderingHints.VALUE_RENDER_QUALITY);
   }
 
-  private final SamplesToDftConverter       dftConverter;
-  private final DftToDecibelConverter       decibelConverter;
-  private final Sink<DftFrame>              decibelSink;
   private final Timer                       timer;
   private final CircularFloatAveragingQueue decibelQueue;
   private final Object                      queueLock = new Object();
 
   private int dftWidth = -1;
 
-  public SpectrumPanel(DftWidth dftWidth, int averaging, int frameRate, int samplesQueueSize) {
-    dftConverter     = new SamplesToDftConverter(dftWidth, samplesQueueSize);
-    decibelConverter = new DftToDecibelConverter();
-    decibelSink      = new DecibelSink();
-    timer            = new Timer(1000 / frameRate, this);
-    decibelQueue     = new CircularFloatAveragingQueue(averaging);
+  public SpectrumPanel(int averaging, int frameRate) {
+    timer        = new Timer(1000 / frameRate, this);
+    decibelQueue = new CircularFloatAveragingQueue(averaging);
 
-    dftConverter.addSink(decibelConverter);
-    decibelConverter.addSink(decibelSink);
     timer.start();
   }
 
   @Override
-  public void consume(Samples element) {
-    dftConverter.consume(element);
-  }
-
-  private class DecibelSink implements Sink<DftFrame> {
-
-    @Override
-    public void consume(DftFrame nextFrame) {
-      synchronized (queueLock) {
-        if (dftWidth != nextFrame.getFrame().length) { // todo: this should never happen
-          decibelQueue.clear();
-          dftWidth = nextFrame.getFrame().length;
-        }
-
-        decibelQueue.add(nextFrame.getFrame());
+  public void consume(DftFrame element) {
+    synchronized (queueLock) {
+      if (dftWidth != element.getFrame().length) {
+        decibelQueue.clear();
+        dftWidth = element.getFrame().length;
       }
-    }
 
+      decibelQueue.add(element.getFrame());
+    }
   }
 
   private void handlePaintBackground(Graphics2D graphics, Dimension size) {
@@ -155,17 +134,13 @@ public class SpectrumPanel extends JPanel implements Sink<Samples>, ActionListen
 
   @Override
   public void actionPerformed(ActionEvent e) {
-    synchronized (queueLock) {
-      if (!decibelQueue.isEmpty())
-        repaint();
-    }
+    if (!decibelQueue.isEmpty())
+      repaint();
   }
 
   @Override
   public void windowClosing(WindowEvent e) {
     timer.stop();
-    dftConverter.removeSink(decibelConverter);
-    decibelConverter.removeSink(decibelSink);
     synchronized (queueLock) { decibelQueue.clear(); }
   }
 

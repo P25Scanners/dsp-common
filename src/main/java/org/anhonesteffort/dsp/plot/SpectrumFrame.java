@@ -17,35 +17,79 @@
 
 package org.anhonesteffort.dsp.plot;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
+import org.anhonesteffort.dsp.dft.DftFrame;
+import org.anhonesteffort.dsp.dft.DftToDecibelConverter;
+import org.anhonesteffort.dsp.dft.SamplesToDftConverter;
+import org.anhonesteffort.dsp.filter.Filter;
 import org.anhonesteffort.dsp.sample.DynamicSink;
 import org.anhonesteffort.dsp.sample.Samples;
 import org.anhonesteffort.dsp.dft.DftWidth;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.JFrame;
 import javax.swing.WindowConstants;
 import java.awt.BorderLayout;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutorService;
 
-public class SpectrumFrame extends JFrame implements DynamicSink<Samples>, ComponentListener {
+public class SpectrumFrame extends JFrame
+    implements DynamicSink<Samples>, FutureCallback<Void>, ComponentListener, WindowListener {
+
+  private static final Logger log = LoggerFactory.getLogger(SpectrumFrame.class);
 
   private final SpectrumPanel            spectrumPanel;
   private final SpectrumGridOverlayPanel gridPanel;
+  private final SamplesToDftConverter    dftConverter;
+  private final ListenableFuture         dftConverterFuture;
 
-  public SpectrumFrame(DftWidth dftWidth, int averaging, int frameRate, int samplesQueueSize) {
+  public SpectrumFrame(ExecutorService executor,
+                       DftWidth        dftWidth,
+                       Integer         averaging,
+                       Integer         frameRate,
+                       Integer         samplesQueueSize)
+  {
     super("DFT Plot");
 
     setLayout(new BorderLayout());
     setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
-    spectrumPanel = new SpectrumPanel(dftWidth, averaging, frameRate, samplesQueueSize);
+    spectrumPanel = new SpectrumPanel(averaging, frameRate);
     gridPanel     = new SpectrumGridOverlayPanel();
 
     getLayeredPane().add(spectrumPanel, 0, 0);
     getLayeredPane().add(gridPanel,     1, 0);
+
+    addWindowListener(this);
+    addWindowListener(spectrumPanel);
     getLayeredPane().addComponentListener(this);
 
-    addWindowListener(spectrumPanel);
+                     dftConverter     = new SamplesToDftConverter(dftWidth, samplesQueueSize);
+    Filter<DftFrame> decibelConverter = new DftToDecibelConverter();
+
+    dftConverter.addSink(decibelConverter);
+    decibelConverter.addSink(spectrumPanel);
+
+    dftConverterFuture = MoreExecutors.listeningDecorator(executor).submit(dftConverter);
+    Futures.addCallback(dftConverterFuture, this);
+  }
+
+  @Override
+  public void onSourceStateChange(Long sampleRate, Double frequency) {
+    gridPanel.onSourceStateChange(sampleRate, frequency);
+  }
+
+  @Override
+  public void consume(Samples element) {
+    dftConverter.consume(element);
   }
 
   @Override
@@ -58,13 +102,22 @@ public class SpectrumFrame extends JFrame implements DynamicSink<Samples>, Compo
   }
 
   @Override
-  public void onSourceStateChange(Long sampleRate, Double frequency) {
-    gridPanel.onSourceStateChange(sampleRate, frequency);
+  public void windowClosing(WindowEvent e) {
+    dftConverterFuture.cancel(true);
   }
 
   @Override
-  public void consume(Samples element) {
-    spectrumPanel.consume(element);
+  public void onSuccess(Void nothing) {
+    log.error("dft converter stopped unexpectedly, closing frame");
+    dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
+  }
+
+  @Override
+  public void onFailure(Throwable throwable) {
+    if (!(throwable instanceof CancellationException)) {
+      log.error("dft converter stopped unexpectedly, closing frame", throwable);
+    }
+    dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
   }
 
   @Override
@@ -75,4 +128,23 @@ public class SpectrumFrame extends JFrame implements DynamicSink<Samples>, Compo
 
   @Override
   public void componentHidden(ComponentEvent e) { }
+
+  @Override
+  public void windowOpened(WindowEvent e) { }
+
+  @Override
+  public void windowClosed(WindowEvent e) { }
+
+  @Override
+  public void windowIconified(WindowEvent e) { }
+
+  @Override
+  public void windowDeiconified(WindowEvent e) { }
+
+  @Override
+  public void windowActivated(WindowEvent e) { }
+
+  @Override
+  public void windowDeactivated(WindowEvent e) { }
+
 }

@@ -46,25 +46,17 @@ public class SamplesToDftConverter extends ConcurrentSource<DftFrame, Sink<DftFr
   }
 
   @Override
-  protected Runnable newProducer() {
-    return new DftProducer();
-  }
-
-  @Override
   public void consume(Samples samples) {
-    if (isProducing() && !consumedSamples.offer(samples.getSamples())) {
+    if (!consumedSamples.offer(samples.getSamples())) {
       consumedSamples.clear();
       consumedSamples.add(samples.getSamples());
       log.warn("sample receive queue has overflowed");
     }
   }
 
-  private class DftProducer implements Supplier<float[]>, Runnable {
-
-    private final Logger log = LoggerFactory.getLogger(DftProducer.class);
-
-    private float[] queuedSamples;
-    private int     queuedSamplesIndex;
+  private class DftFrameSlicer implements Supplier<float[]> {
+    private float[] queuedSamples      = new float[dftLength];
+    private int     queuedSamplesIndex = 0;
 
     @Override
     public float[] get() {
@@ -91,46 +83,28 @@ public class SamplesToDftConverter extends ConcurrentSource<DftFrame, Sink<DftFr
           }
         }
 
-        if (Thread.interrupted())
-          throw new StreamInterruptedException("interrupted while slicing dft frame");
-
         return frame;
 
       } catch (InterruptedException e) {
         throw new StreamInterruptedException("interrupted while slicing dft frame", e);
       }
     }
+  }
 
-    @Override
-    public void run() {
-      queuedSamples      = new float[dftLength];
-      queuedSamplesIndex = 0;
+  @Override
+  public Void call() throws StreamInterruptedException {
+    try {
 
-      try {
+      Stream.generate(new DftFrameSlicer()).forEach(frame -> {
+        fft.complexForward(frame);
+        broadcast(new DftFrame(frame));
+      });
 
-        Stream.generate(this).forEach(frame -> {
-          try {
-
-            fft.complexForward(frame);
-
-          } catch (Exception e) {
-            if (e instanceof InterruptedException) {
-              throw new StreamInterruptedException("this happens sometimes D:", e);
-            } else {
-              throw e;
-            }
-          }
-
-          broadcast(new DftFrame(frame));
-        });
-
-      } catch (StreamInterruptedException e) {
-        log.debug("dft calculation stream interrupted, assuming intended shutdown");
-      } finally {
-        consumedSamples.clear();
-        queuedSamples = null;
-      }
+    } finally {
+      consumedSamples.clear();
     }
+
+    return null;
   }
 
 }
