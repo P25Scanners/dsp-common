@@ -24,22 +24,18 @@ import java.util.stream.IntStream;
 public class CircularFloatAveragingQueue {
 
   private final CircularFifoQueue<float[]> queue;
-  private final int queueLimit;
-  private int queueSize   = 0;
   private int arrayLength = 0;
 
   public CircularFloatAveragingQueue(int size) {
-    queue      = new CircularFifoQueue<>(size);
-    queueLimit = size;
+    queue = new CircularFifoQueue<>(size);
   }
 
   public boolean isEmpty() {
-    return queueSize == 0;
+    return queue.isEmpty();
   }
 
   public void add(float[] floats) {
     queue.add(floats);
-    queueSize   = (queueSize < queueLimit) ? ++queueSize : queueLimit;
     arrayLength = floats.length;
   }
 
@@ -47,13 +43,12 @@ public class CircularFloatAveragingQueue {
     float[] averages = new float[arrayLength];
 
     IntStream.range(0, arrayLength).forEach(
-        arrayIndex -> averages[arrayIndex] = (float) IntStream.range(0, queueSize).mapToDouble(
+        arrayIndex -> averages[arrayIndex] = (float) IntStream.range(0, queue.size()).mapToDouble(
             queueIndex -> (double) queue.get(queueIndex)[arrayIndex]
         ).average().getAsDouble()
     );
 
     queue.remove();
-    queueSize--;
     return averages;
   }
 
