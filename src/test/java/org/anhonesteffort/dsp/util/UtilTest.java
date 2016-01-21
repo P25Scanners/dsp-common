@@ -28,6 +28,11 @@ public class UtilTest {
     final FloatBuffer ORIGINAL = FloatBuffer.wrap(new float[] {0, 1, 2, 3});
     final FloatBuffer CLONE    = Util.clone(ORIGINAL);
 
+    assert CLONE.get() == 0;
+    assert CLONE.get() == 1;
+    assert CLONE.get() == 2;
+    assert CLONE.get() == 3;
+
     assert CLONE.get(0) == 0;
     assert CLONE.get(1) == 1;
     assert CLONE.get(2) == 2;

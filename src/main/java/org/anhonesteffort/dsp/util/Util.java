@@ -22,12 +22,13 @@ import java.nio.FloatBuffer;
 
 public class Util {
 
-  public static FloatBuffer clone(final FloatBuffer original) {
+  public static FloatBuffer clone(FloatBuffer original) {
     final FloatBuffer clone        = FloatBuffer.allocate(original.capacity());
     final FloatBuffer readOriginal = original.asReadOnlyBuffer();
 
     readOriginal.position(0);
     clone.put(readOriginal);
+    clone.position(original.position());
 
     return clone;
   }
