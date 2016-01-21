@@ -49,6 +49,7 @@ public class ComplexNumberFirstOrderCicInterpolatingFilter extends RateChangeFil
 
   public static class InterpolatingCicStage extends Filter<ComplexNumber> {
 
+    private final ComplexNumber   zero = new ComplexNumber(0, 0);
     private final ComplexNumber[] delayLine;
     private final int             interpolation;
     private final int             diffDelay;
@@ -63,8 +64,7 @@ public class ComplexNumberFirstOrderCicInterpolatingFilter extends RateChangeFil
       gain               = 1f / (interpolation * diffDelay);
       delayLine          = new ComplexNumber[interpolation * diffDelay];
 
-      IntStream.range(0, delayLine.length)
-               .forEach(i -> delayLine[i] = new ComplexNumber(0, 0));
+      IntStream.range(0, delayLine.length).forEach(i -> delayLine[i] = zero);
     }
 
     private ComplexNumber comb(ComplexNumber element) {
@@ -85,7 +85,7 @@ public class ComplexNumberFirstOrderCicInterpolatingFilter extends RateChangeFil
       integrate(comb(element));
 
       for (int i = 0; i < (interpolation - 1); i++)
-        broadcast(new ComplexNumber(0, 0));
+        broadcast(zero);
     }
   }
 
