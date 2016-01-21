@@ -63,8 +63,7 @@ public class ComplexNumberFirstOrderCicDecimatingFilter extends RateChangeFilter
       gain            = 1f / decimation;
       delayLine       = new ComplexNumber[decimation * diffDelay];
 
-      IntStream.range(0, delayLine.length)
-               .forEach(i -> delayLine[i] = new ComplexNumber(0, 0));
+      IntStream.range(0, delayLine.length).forEach(i -> delayLine[i] = last);
     }
 
     private ComplexNumber integrate(ComplexNumber element) {
@@ -73,7 +72,7 @@ public class ComplexNumberFirstOrderCicDecimatingFilter extends RateChangeFilter
     }
 
     private void comb(ComplexNumber element) {
-      ComplexNumber output = element.subtract(delayLine[delayIndex]);
+      ComplexNumber output  = element.subtract(delayLine[delayIndex]);
       delayLine[delayIndex] = element;
       delayIndex            = (delayIndex + 1) % (decimation * diffDelay);
 
