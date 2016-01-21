@@ -38,8 +38,8 @@ public class ComplexNumberFirFilter extends ConsistentRateFilter<ComplexNumber> 
     length     = coefficients.length;
     delayLine  = new ComplexNumber[length];
 
-    IntStream.range(0, length)
-             .forEach(i -> delayLine[i] = new ComplexNumber(0f, 0f));
+    ComplexNumber zero = new ComplexNumber(0f, 0f);
+    IntStream.range(0, length).forEach(i -> delayLine[i] = zero);
   }
 
   protected int getLength() {
