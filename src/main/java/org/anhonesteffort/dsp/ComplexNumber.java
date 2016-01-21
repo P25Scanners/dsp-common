@@ -101,7 +101,7 @@ public class ComplexNumber implements Copyable<ComplexNumber> {
 
   @Override
   public ComplexNumber copy() {
-    return new ComplexNumber(inPhase, quadrature);
+    return this;
   }
 
   @Override
