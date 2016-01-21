@@ -24,16 +24,8 @@ public class ComplexNumberFrequencyTranslatingFilter extends ConsistentRateFilte
 
   private Oscillator oscillator;
 
-  public ComplexNumberFrequencyTranslatingFilter(long    sourceRate,
-                                                 double  sourceFreq,
-                                                 double  channelFreq,
-                                                 boolean sloppy)
-  {
-    oscillator = new Oscillator(sourceRate, sourceFreq - channelFreq, sloppy);
-  }
-
   public ComplexNumberFrequencyTranslatingFilter(long sourceRate, double sourceFreq, double channelFreq) {
-    this(sourceRate, sourceFreq, channelFreq, false);
+    oscillator = new Oscillator(sourceRate, sourceFreq - channelFreq);
   }
 
   @Override

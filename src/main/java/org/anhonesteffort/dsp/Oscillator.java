@@ -19,34 +19,20 @@ package org.anhonesteffort.dsp;
 
 public class Oscillator {
 
-  private final boolean       sloppy;
   private final ComplexNumber incrementFactor;
   private       ComplexNumber currentAngle;
 
-  public Oscillator(long sampleRate, double frequency, ComplexNumber initialAngle, boolean sloppy) {
-    this.sloppy     = sloppy;
+  public Oscillator(long sampleRate, double frequency, ComplexNumber initialAngle) {
     incrementFactor = new ComplexNumber((float) (2.0d * Math.PI * frequency / (double) sampleRate));
     currentAngle    = initialAngle;
   }
 
-  public Oscillator(long sampleRate, double frequency, ComplexNumber initialAngle) {
-    this(sampleRate, frequency, initialAngle, false);
-  }
-
-  public Oscillator(long sampleRate, double frequency, boolean sloppy) {
-    this(sampleRate, frequency, new ComplexNumber(1f, 0f), sloppy);
-  }
-
   public Oscillator(long sampleRate, double frequency) {
-    this(sampleRate, frequency, false);
+    this(sampleRate, frequency, new ComplexNumber(1f, 0f));
   }
 
   public ComplexNumber next() {
-    if (!sloppy)
-      currentAngle = currentAngle.multiply(incrementFactor).normalize();
-    else
-      currentAngle = currentAngle.multiply(incrementFactor).sloppyNormalize();
-
+    currentAngle = currentAngle.multiply(incrementFactor).normalize();
     return currentAngle.copy();
   }
 

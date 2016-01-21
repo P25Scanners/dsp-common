@@ -44,27 +44,4 @@ public class OscillatorTest {
     }
   }
 
-  @Test
-  public void testSloppy() {
-    final long            RATE          = 20;
-    final double          FREQ          =  4;
-    final int             SIGNAL_LENGTH = (int) (RATE / FREQ);
-    final ComplexNumber[] SIGNAL        = new ComplexNumber[SIGNAL_LENGTH];
-    final Oscillator      OSCILLATOR    = new Oscillator(RATE, FREQ, true);
-
-    int storeIndex   = 0;
-    int compareIndex = 0;
-
-    for (int i = 0; i < RATE; i++) {
-      ComplexNumber next = OSCILLATOR.next();
-      if (storeIndex < SIGNAL.length) {
-        SIGNAL[storeIndex++] = next;
-      } else {
-        assert Math.abs(SIGNAL[compareIndex].getInPhase()    - next.getInPhase())    < 0.1;
-        assert Math.abs(SIGNAL[compareIndex].getQuadrature() - next.getQuadrature()) < 0.1;
-        compareIndex = (compareIndex + 1) == SIGNAL.length ? 0 : compareIndex + 1;
-      }
-    }
-  }
-
 }

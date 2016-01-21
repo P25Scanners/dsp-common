@@ -95,10 +95,6 @@ public class ComplexNumber implements Copyable<ComplexNumber> {
     return (magnitude != 0f) ? copy().multiply(1.0f / magnitude) : new ComplexNumber(0, 0);
   }
 
-  public ComplexNumber sloppyNormalize() {
-    return copy().multiply(1.95f - magnitudeSquared());
-  }
-
   public ComplexNumber conjugate() {
     return new ComplexNumber(inPhase, -quadrature);
   }
